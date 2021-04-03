@@ -1,36 +1,73 @@
 version: '3'
-services:
+  services:
   app:
-    container_name: app-server
-    image: nextcloud:fpm
-    restart: always
-    expose:
-      - '80'
-      - '9000'
-    volumes:
-      - app_data:/var/www/html
+  container_name: app-server
+  image: nextcloud:fpm
+  stdin_open: true
+  tty: true
+  restart: always
+  expose:
+    - '88’
+    - '9000'
+  environment:
+    - UPLOAD_MAX_SIZE=5G
+    - APC_SHM_SIZE=128M
+    - OPCACHE_MEM_SIZE=128
+    - CRON_PERIOD=15m
+    - TZ=Aisa/Shanghai
+    - NEXTCLOUD_ADMIN_USER=hackjown
+    - NEXTCLOUD_ADMIN_PASSWORD=jown2004
+    - NEXTCLOUD_TRUSTED_DOMAINS="..."
+    - MYSQL_DATABASE=nextcloud
+    - MYSQL_USER=nextcloud
+    - MYSQL_PASSWORD=jown2004
+    - MYSQL_HOST=nextcloud-db
+  networks:
+    - onlyoffice
+  volumes:
+    - /srv/dev-disk-by-path-pci-0000-00-10.0-scsi-0-0-1-0-part1/nextcloud/nextcloud:/var/www/html
+    nextcloud-db:
+  image: mariadb
+  container_name: nextcloud-db
+  command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+  networks:
+    - onlyoffice
+  volumes:
+    - /srv/dev-disk-by-path-pci-0000-00-10.0-scsi-0-0-1-0-part1/nextcloud/db:/var/lib/mysql
+  environment:
+    - MYSQL_ROOT_PASSWORD=jown2004
+    - MYSQL_PASSWORD=jown2004
+    - MYSQL_DATABASE=nextcloud
+    - MYSQL_USER=nextcloud
+  restart: always
   onlyoffice-document-server:
-    container_name: onlyoffice-document-server
-    image: onlyoffice/documentserver:latest
-    restart: always
-    expose:
-      - '80'
-      - '443'
+  container_name: onlyoffice-document-server
+  image: onlyoffice/documentserver:latest
+  stdin_open: true
+  tty: true
+  restart: always
+  networks:
+    - onlyoffice
+  expose:
+    - '80'
+    - '443'
     volumes:
-      - document_data:/var/www/onlyoffice/Data
-      - document_log:/var/log/onlyoffice
+    - /srv/dev-disk-by-path-pci-0000-00-10.0-scsi-0-0-1-0-part1/onlyoffice/data:/var/www/onlyoffice/Data
+    - /srv/dev-disk-by-path-pci-0000-00-10.0-scsi-0-0-1-0-part1/onlyoffice/log:/var/log/onlyoffice
   nginx:
-    container_name: nginx-server
-    image: nginx
-    restart: always
-    ports:
-      - 80:80
-      - 443:443
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - app_data:/var/www/html
-volumes:
-  document_data:
-  document_log:
-  app_data:
-  mysql_data:
+  container_name: nginx-server
+  image: nginx
+  stdin_open: true
+  tty: true
+  restart: always
+  ports:
+    - 8081:80
+    - 442:443
+  networks:
+    - onlyoffice
+  volumes:
+    - /srv/dev-disk-by-path-pci-0000-00-10.0-scsi-0-0-1-0-part1/nextcloud/nginx.conf:/etc/nginx/nginx.conf
+    - /srv/dev-disk-by-path-pci-0000-00-10.0-scsi-0-0-1-0-part1/nextcloud/nextcloud:/var/www/html
+  networks:
+  onlyoffice:
+  driver: 'bridge'
